@@ -136,38 +136,58 @@
     });
   }
 
-  /* Network canvas: fixed behind the whole page */
+  /* Network canvas: fixed behind the whole page. Also the board for Network Defender. */
   const cv = $("#network"), ctx = cv.getContext("2d");
-  let W, H, pts = [], mouse = { x: -999, y: -999 }, hidden = document.hidden;
+  let W, H, pts = [], mouse = { x: -999, y: -999 }, hidden = document.hidden, running = false;
   const accent = () => netColor || (netColor = getComputedStyle(root).getPropertyValue("--net").trim() || "#2f8f4e");
+  const NET = {
+    ctx, hooks: [], force: false, repel: true, onSpecial: null,
+    get pts() { return pts; }, get W() { return W; }, get H() { return H; },
+    color: () => accent(),
+    kick: () => { if (!running) draw(); }
+  };
   const size = () => {
     const dpr = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight;
     cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const n = Math.min(120, Math.floor((W * H) / 13000));
     pts = Array.from({ length: n }, () => ({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - .5) * .35, vy: (Math.random() - .5) * .35 }));
+    if (pts[0]) pts[0].special = true; // one node in the background is a hidden button
   };
   addEventListener("resize", size); size();
-  addEventListener("pointermove", (e) => { mouse.x = e.clientX; mouse.y = e.clientY; }, { passive: true });
+  const nearSpecial = (x, y) => { const p = pts.find((q) => q.special); return !!p && Math.hypot(p.x - x, p.y - y) < 22; };
+  const interactive = "a,button,input,textarea,select,label,[data-frame],.palette,.loupe";
+  addEventListener("pointermove", (e) => {
+    mouse.x = e.clientX; mouse.y = e.clientY;
+    if (NET.onSpecial) document.body.style.cursor = !e.target.closest(interactive) && nearSpecial(e.clientX, e.clientY) ? "pointer" : "";
+  }, { passive: true });
+  document.addEventListener("click", (e) => {
+    if (NET.onSpecial && !e.target.closest(interactive) && nearSpecial(e.clientX, e.clientY)) NET.onSpecial();
+  });
   document.addEventListener("pointerleave", () => { mouse.x = mouse.y = -999; });
-  document.addEventListener("visibilitychange", () => { hidden = document.hidden; if (!hidden) draw(); });
+  document.addEventListener("visibilitychange", () => { hidden = document.hidden; if (!hidden && !running) draw(); });
   function draw() {
-    if (hidden) return;
+    if (hidden) { running = false; return; }
     ctx.clearRect(0, 0, W, H);
     const col = accent();
-    ctx.fillStyle = col; ctx.strokeStyle = col;
+    ctx.fillStyle = col; ctx.strokeStyle = col; ctx.lineWidth = 1;
+    const now = performance.now();
     for (const p of pts) {
-      if (!reduced) { p.x += p.vx; p.y += p.vy; }
+      if (!reduced || NET.force) { p.x += p.vx; p.y += p.vy; }
       if (p.x < 0 || p.x > W) p.vx *= -1; if (p.y < 0 || p.y > H) p.vy *= -1;
       const dx = p.x - mouse.x, dy = p.y - mouse.y, d = Math.hypot(dx, dy);
-      if (d < 140 && d > 0) { p.x += (dx / d) * 1.6; p.y += (dy / d) * 1.6; }
-      ctx.globalAlpha = .7; ctx.beginPath(); ctx.arc(p.x, p.y, 1.7, 0, 6.283); ctx.fill();
+      if (NET.repel && d < 140 && d > 0) { p.x += (dx / d) * 1.6; p.y += (dy / d) * 1.6; }
+      ctx.globalAlpha = .7; ctx.beginPath(); ctx.arc(p.x, p.y, p.special ? 3.6 : 1.7, 0, 6.283); ctx.fill();
+      if (p.special) { const t = (now / 1400) % 1; ctx.globalAlpha = .55 * (1 - t); ctx.beginPath(); ctx.arc(p.x, p.y, 4 + t * 14, 0, 6.283); ctx.stroke(); }
     }
     for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
       const d = Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y);
       if (d < 135) { ctx.globalAlpha = (1 - d / 135) * .32; ctx.beginPath(); ctx.moveTo(pts[i].x, pts[i].y); ctx.lineTo(pts[j].x, pts[j].y); ctx.stroke(); }
     }
-    for (const p of pts) { const d = Math.hypot(p.x - mouse.x, p.y - mouse.y); if (d < 170) { ctx.globalAlpha = (1 - d / 170) * .6; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(mouse.x, mouse.y); ctx.stroke(); } }
-    if (!reduced) requestAnimationFrame(draw);
+    if (NET.repel) for (const p of pts) { const d = Math.hypot(p.x - mouse.x, p.y - mouse.y); if (d < 170) { ctx.globalAlpha = (1 - d / 170) * .6; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(mouse.x, mouse.y); ctx.stroke(); } }
+    ctx.globalAlpha = 1;
+    for (const h of NET.hooks) h(ctx, W, H, now);
+    running = !reduced || NET.force;
+    if (running) requestAnimationFrame(draw);
   }
   draw();
 
@@ -179,7 +199,7 @@
   const pal = $("#palette"), inp = $("#paletteInput"), list = $("#paletteList");
   const go = (id) => () => { const el = $(id); el && el.scrollIntoView({ behavior: reduced ? "auto" : "smooth" }); };
   const cmds = [
-    ...[["About", "#about"], ["Projects", "#projects"], ["Experience", "#experience"], ["Skills", "#skills"], ["Competency tree", "#competencyTree"], ["Education", "#education"], ["Contact", "#contact"]].map(([n, id]) => ({ n: "Go to " + n, k: "section", run: go(id) })),
+    ...[["About", "#about"], ["Projects", "#projects"], ["Experience", "#experience"], ["Skills", "#skills"], ["Competency tree", "#competencyTree"], ["Education", "#education"], ["Guestbook", "#guestbook"], ["Contact", "#contact"]].map(([n, id]) => ({ n: "Go to " + n, k: "section", run: go(id) })),
     ...S.projects.map((p) => ({ n: p.title, k: "project", run: go("#projects") })),
     { n: "Toggle light / dark theme", k: "action", run: () => toggleTheme() },
     { n: "Copy email address", k: "action", run: copyEmail },
@@ -211,4 +231,7 @@
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); pal.hidden ? openPal() : closePal(); }
     else if (e.key === "Escape" && !pal.hidden) closePal();
   });
+
+  /* Shared surface for the games, and easter eggs (js/fun.js, terminal.js, defender.js) */
+  window.Site = { S, say, esc, reduced, toggleTheme, cmds, go, net: NET, refreshColors: () => { netColor = null; } };
 })();

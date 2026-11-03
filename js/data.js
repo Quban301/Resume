@@ -185,6 +185,17 @@ window.SITE = {
     { group: "Craft & Leadership", items: ["Legacy Modernization", "Code Review & Mentorship", "Agile Development", "Product Ownership"] }
   ],
 
+  // The guestbook. By default notes are saved in the visitor's own browser. For a shared,
+  // moderated guestbook, paste a Firebase Realtime Database URL here, e.g.
+  // "https://your-project-default-rtdb.firebaseio.com", with these database rules:
+  //   { "rules": { "guestbook": { ".read": true, "$id": {
+  //       ".write": "!data.exists() && newData.child('ok').val() === false",
+  //       ".validate": "newData.child('name').isString() && newData.child('name').val().length <= 24 && newData.child('msg').isString() && newData.child('msg').val().length <= 240" } } } }
+  // New notes arrive with ok: false and stay hidden (the author still sees theirs as
+  // "awaiting approval"). To publish one, set its "ok" to true in the Firebase console;
+  // delete it there to remove it.
+  guestbook: { endpoint: "" },
+
   certifications: [
     "Cloud DevOps (Intel)", "PHP Master Class (Udemy)", "Data Classification & Summarization with IBM Granite",
     "Python Essentials 2", "Cybersecurity Essentials (Cisco)", "JavaScript Essentials 2",
