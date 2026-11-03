@@ -6,6 +6,7 @@
   if (!host) return;
 
   const endpoint = ((S.guestbook && S.guestbook.endpoint) || "").replace(/\/$/, "");
+  const MOODS = ["😍", "🤏", "💚","🤍", "🤩", "🔥", "🫶"];
   const MAX_NAME = 24, MAX_MSG = 240, COOLDOWN = 60000;
   const form = host.querySelector("#gbForm"), list = host.querySelector("#gbList"), meta = host.querySelector("#gbMeta");
   const name = form.elements.name, msg = form.elements.msg, count = host.querySelector("#gbCount"), moods = host.querySelector("#gbMoods");
@@ -59,7 +60,6 @@
         <p class="note-by"><b>${esc(e.name)}</b> <time>${fmt(e.t)}</time>${e.pending ? ' <em>awaiting approval</em>' : ""}</p></li>`).join("")
       : '<li class="note-empty">No signatures yet. Be the first to sign.</li>';
     meta.textContent = endpoint
-      ? `${approved.length} note${approved.length === 1 ? "" : "s"} pinned up · new notes appear once approved`
       ? `${approved.length} note${approved.length === 1 ? "" : "s"} pinned up · New notes coming soon`
       : `${approved.length} note${approved.length === 1 ? "" : "s"} · saved in this browser`;
   }
