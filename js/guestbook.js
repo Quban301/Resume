@@ -6,7 +6,7 @@
   if (!host) return;
 
   const endpoint = ((S.guestbook && S.guestbook.endpoint) || "").replace(/\/$/, "");
-  const MOODS = ["🌱", "👋", "💚", "🚀", "🔥", "🐛"];
+  const MOODS = ["😍", "🤏", "💚","🤍", "🤩", "🔥", "🐇"];
   const MAX_NAME = 24, MAX_MSG = 240, COOLDOWN = 60000;
   const form = host.querySelector("#gbForm"), list = host.querySelector("#gbList"), meta = host.querySelector("#gbMeta");
   const name = form.elements.name, msg = form.elements.msg, count = host.querySelector("#gbCount"), moods = host.querySelector("#gbMoods");

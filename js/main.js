@@ -158,10 +158,10 @@
   const interactive = "a,button,input,textarea,select,label,[data-frame],.palette,.loupe";
   addEventListener("pointermove", (e) => {
     mouse.x = e.clientX; mouse.y = e.clientY;
-    if (NET.onSpecial) document.body.style.cursor = !e.target.closest(interactive) && nearSpecial(e.clientX, e.clientY) ? "pointer" : "";
+    if (NET.onSpecial) document.body.style.cursor = !e.target.closest?.(interactive) && nearSpecial(e.clientX, e.clientY) ? "pointer" : "";
   }, { passive: true });
   document.addEventListener("click", (e) => {
-    if (NET.onSpecial && !e.target.closest(interactive) && nearSpecial(e.clientX, e.clientY)) NET.onSpecial();
+    if (NET.onSpecial && !e.target.closest?.(interactive) && nearSpecial(e.clientX, e.clientY)) NET.onSpecial();
   });
   document.addEventListener("pointerleave", () => { mouse.x = mouse.y = -999; });
   document.addEventListener("visibilitychange", () => { hidden = document.hidden; if (!hidden && !running) draw(); });

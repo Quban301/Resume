@@ -10,11 +10,16 @@
   const o = (t) => print(`<span class="o">${t}</span>`);
   const skills = [...new Set(S.skills.flatMap((s) => s.items))];
 
-  /* ================= Snake: the food is your skills ================= */
+  /*  Snake: the food is your skills  */
   const Snake = (() => {
-    const COLS = 22, ROWS = 14, CELL = 20;
-    cv.width = COLS * CELL; cv.height = ROWS * CELL;
+    // While it's running, Snake becomes the terminal: the grid is sized to fill the whole window.
+    const CELL = 20, hint = root.querySelector(".term-bar em"), hintText = hint ? hint.textContent : "";
+    let COLS = 22, ROWS = 14;
     const g = cv.getContext("2d");
+    const fit = () => {
+      COLS = Math.max(12, Math.floor(body.clientWidth / CELL)); ROWS = Math.max(9, Math.floor(body.clientHeight / CELL));
+      cv.width = COLS * CELL; cv.height = ROWS * CELL; cv.style.width = cv.width + "px"; cv.style.height = cv.height + "px";
+    };
     let snake, dir, queued, food, score, timer = 0, state = "off", best = Site.store.get("snake", 0), toastText = "", toastT = 0;
 
     const placeFood = () => {
@@ -22,7 +27,7 @@
       while (snake.some((s) => s.x === food.x && s.y === food.y));
     };
     const reset = () => {
-      snake = [{ x: 6, y: 7 }, { x: 5, y: 7 }, { x: 4, y: 7 }];
+      const cy = Math.floor(ROWS / 2); snake = [{ x: 6, y: cy }, { x: 5, y: cy }, { x: 4, y: cy }];
       dir = { x: 1, y: 0 }; queued = dir; score = 0; toastText = ""; placeFood(); state = "ready"; draw();
     };
     const speed = () => Math.max(60, 125 - score * 3);
@@ -81,6 +86,7 @@
     const keys = { ArrowUp: [0, -1], w: [0, -1], ArrowDown: [0, 1], s: [0, 1], ArrowLeft: [-1, 0], a: [-1, 0], ArrowRight: [1, 0], d: [1, 0] };
     const onKey = (e) => {
       if (state === "off" || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (/^(input|textarea|select)$/i.test(e.target.tagName) || e.target.isContentEditable) return; // never steal typing
       const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
       if (keys[k]) { turn(...keys[k]); }
       else if (k === " " && (state === "run" || state === "paused")) { if (state === "run") { clearInterval(timer); state = "paused"; draw(); } else { state = "run"; run(); } }
@@ -97,26 +103,34 @@
       Math.abs(dx) > Math.abs(dy) ? turn(Math.sign(dx), 0) : turn(0, Math.sign(dy));
     });
     cv.style.touchAction = "none";
-    new IntersectionObserver(([e]) => { if (!e.isIntersecting && state === "run") { clearInterval(timer); state = "paused"; draw(); } }).observe(cv);
+    // Scrolled away: pause, and let go of the keyboard so WASD works everywhere else.
+    new IntersectionObserver(([e]) => {
+      if (state === "off") return;
+      if (e.isIntersecting) addEventListener("keydown", onKey, true);
+      else { if (state === "run") { clearInterval(timer); state = "paused"; draw(); } removeEventListener("keydown", onKey, true); }
+    }).observe(cv);
 
     function start() {
-      if (state !== "off") return;
-      cv.hidden = false; input.blur(); reset();
+      if (state !== "off" || root.classList.contains("playing")) return;
+      root.classList.add("playing"); cv.hidden = false; input.blur(); fit(); reset();
+      if (hint) hint.textContent = "Esc to exit";
       addEventListener("keydown", onKey, true);
-      cv.scrollIntoView({ block: "center", behavior: Site.reduced ? "auto" : "smooth" });
+      root.scrollIntoView({ block: "center", behavior: Site.reduced ? "auto" : "smooth" });
       print('<span class="o">Snake started. Eat your skills. Esc to quit.</span>');
     }
     function stop() {
       if (state === "off") return;
-      clearInterval(timer); state = "off"; cv.hidden = true;
+      clearInterval(timer); state = "off"; cv.hidden = true; root.classList.remove("playing");
+      if (hint) hint.textContent = hintText;
       removeEventListener("keydown", onKey, true);
       print(`<span class="o">Snake over. Score ${score}, best ${best}.</span>`);
       input.focus({ preventScroll: true });
     }
+    addEventListener("resize", () => { if (state === "off") return; clearInterval(timer); fit(); reset(); });
     return { start, stop, get active() { return state !== "off"; } };
   })();
 
-  /* ================= commands ================= */
+  /*  commands  */
   const files = {
     "now.txt": ["→ leading dev &amp; facilitating at WWISE", "→ building proctoring, LMS &amp; cert-prep platforms", "→ shipping integrations across third-party APIs"],
     "skills.txt": S.skills.map((s) => `${esc(s.name)}: ${s.items.map(esc).join(", ")}`),
@@ -124,8 +138,9 @@
   };
   const help = [
     ["help", "this list"], ["whoami / codename", "who is this"], ["ls [-a]", "list files"], ["cat &lt;file&gt;", "read a file"], ["skills", "everything in the toolbox"],
-    ["projects", "what I've built"], ["play snake", "eat your skills"], ["defend", "Network Defender: patch the infected nodes"], ["crt", "retro mode"], ["guestbook", "go sign the guestbook"], ["achievements", "secrets found so far"], ["clear", "clean up"]
+    ["projects", "what I've built"], ["play snake", "eat your skills"], ["sudoku [easy|medium|hard]", "classic sudoku"], ["minesweeper [easy|medium|hard]", "classic minesweeper"], ["typefall", "type the falling words before they land"], ["defend", "Network Defender: patch the infected nodes"], ["crt", "retro mode"], ["guestbook", "go sign the guestbook"], ["achievements", "secrets found so far"], ["clear", "clean up"]
   ];
+  const games = new Set(); // names registered through Site.terminal.add, playable via `play <name>`
   const C = {
     help() { help.forEach(([c, d]) => print(`<span class="p">${c}</span><span class="o"> - ${d}</span>`)); },
     whoami() { o("qhawe moyo"); },
@@ -135,7 +150,13 @@
     cat(a) { const f = files[a[0]]; f ? f.forEach(o) : o(a[0] ? `cat: ${esc(a[0])}: No such file` : "cat: missing file"); },
     skills() { files["skills.txt"].forEach(o); },
     projects() { S.projects.forEach((p, i) => o(`${String(i + 1).padStart(2, "0")}  ${esc(p.title)} - ${esc(p.tagline)}`)); o("(scroll to Projects to open them)"); },
-    play(a) { a[0] === "snake" ? Snake.start() : a[0] === "defender" ? Site.defender?.start() : o("play what? try: play snake"); },
+    play(a) {
+      const g = (a[0] || "").toLowerCase();
+      if (g === "snake") Snake.start();
+      else if (g === "defender") Site.defender?.start();
+      else if (games.has(g)) C[g](a.slice(1));
+      else o("play what? try: play snake, sudoku, minesweeper, typefall, defender");
+    },
     snake() { Snake.start(); },
     defend() { Site.defender?.start(); },
     crt() { Site.toggleCRT(); },
@@ -160,10 +181,14 @@
     fn ? fn(args) : o(`command not found: ${esc(cmd)}. Try 'help'.`);
   };
   Site.terminal = {
+    root, body, input, skills, print: o,
+    get busy() { return root.classList.contains("playing"); },
     run(line, scroll) {
       if (scroll) root.scrollIntoView({ block: "center", behavior: Site.reduced ? "auto" : "smooth" });
       run(line, true);
-    }
+    },
+    // Register a game command: add(["typefall", "type"], fn).
+    add(names, fn) { names.forEach((n) => { C[n] = fn; games.add(n); }); }
   };
 
   input.addEventListener("keydown", (e) => {
@@ -171,7 +196,7 @@
     else if (e.key === "ArrowUp") { e.preventDefault(); if (hi > 0) input.value = history[--hi]; }
     else if (e.key === "ArrowDown") { e.preventDefault(); input.value = hi < history.length - 1 ? history[++hi] : ((hi = history.length), ""); }
   });
-  body.addEventListener("click", (e) => { if (!Snake.active && !e.target.closest("canvas") && !getSelection().toString()) input.focus({ preventScroll: true }); });
+  body.addEventListener("click", (e) => { if (!root.classList.contains("playing") && !e.target.closest("canvas") && !getSelection().toString()) input.focus({ preventScroll: true }); });
 
   Site.cmds.push({ n: "Play Snake (terminal)", k: "game", run: () => { Site.go("#terminal")(); setTimeout(() => Snake.start(), Site.reduced ? 0 : 600); } });
 })();

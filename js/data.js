@@ -50,7 +50,7 @@ window.SITE = {
       category: "Web",
       year: "2026",
       links: {live: "https://wwiseacademy.com/Home"},
-      featured: true,
+      // featured: true,
       accent: ["#15803d", "#4ade80"]
     },
     {
@@ -186,15 +186,14 @@ window.SITE = {
   ],
 
   // The guestbook. By default notes are saved in the visitor's own browser. For a shared,
-  // moderated guestbook, paste a Firebase Realtime Database URL here, e.g.
-  // "https://your-project-default-rtdb.firebaseio.com", with these database rules:
-  //   { "rules": { "guestbook": { ".read": true, "$id": {
-  //       ".write": "!data.exists() && newData.child('ok').val() === false",
-  //       ".validate": "newData.child('name').isString() && newData.child('name').val().length <= 24 && newData.child('msg').isString() && newData.child('msg').val().length <= 240" } } } }
-  // New notes arrive with ok: false and stay hidden (the author still sees theirs as
-  // "awaiting approval"). To publish one, set its "ok" to true in the Firebase console;
-  // delete it there to remove it.
-  guestbook: { endpoint: "" },
+  // moderated guestbook, set the Firebase Realtime Database URL below (see README for the
+  // full setup and the database rules). New notes arrive hidden (ok: false) and the author
+  // sees theirs as "awaiting approval". Approve, edit or deny them at /guestbook/ (the
+  // moderation page), which signs in with a Firebase email/password user. apiKey is the
+  // project's public Web API key (Project settings > General); it is safe to publish.
+  guestbook: { 
+    endpoint: "https://guestbook-quban-default-rtdb.firebaseio.com/", 
+    apiKey: "AIzaSyBQ-YmbpKLyR5pFP77MRPzCKHOp4KNjXUw" },
 
   certifications: [
     "Cloud DevOps (Intel)", "PHP Master Class (Udemy)", "Data Classification & Summarization with IBM Granite",
