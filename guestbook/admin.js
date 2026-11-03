@@ -141,7 +141,7 @@
     if (!confirm(`${n.ok ? "Delete" : "Deny"} this note from ${n.name}? This can't be undone.`)) return;
     run(async () => { await api("guestbook/" + encodeURIComponent(n.k), "DELETE"); notes = notes.filter((x) => x !== n); render(); }, n.ok ? "Deleted." : "Denied and removed.");
   };
-  const refreshNow = () => run(async () => { await load(); render(); }, () => "Up to date. Signed in with UID " + uidOf(tok.id));
+  const refreshNow = () => run(async () => { await load(); render(); }, () => "Up to date");//"Up to date. Signed in with UID " + uidOf(tok.id))
 
   /*  boot  */
   $("#signout").addEventListener("click", () => { tok = null; saveRefresh(null); notes = []; show("login"); });
