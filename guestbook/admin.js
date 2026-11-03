@@ -48,11 +48,20 @@
   };
   const token = async () => { if (!tok || Date.now() > tok.exp - 60000) await refresh(); return tok.id; };
 
+  // The signed-in user's UID is inside the token. The database rules must name exactly this value.
+  const uidOf = (jwt) => { try { const p = JSON.parse(atob(jwt.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))); return p.user_id || p.sub || ""; } catch { return ""; } };
+
   const api = async (path, method = "GET", body) => {
-    const r = await fetch(`${base}/${path}.json?auth=${encodeURIComponent(await token())}`, {
+    const t = await token();
+    const r = await fetch(`${base}/${path}.json?auth=${encodeURIComponent(t)}`, {
       method, headers: body ? { "Content-Type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined
     });
-    if (r.status === 401 || r.status === 403) throw new Error("Permission denied. Check the database rules and that your UID is in them.");
+    if (r.status === 401 || r.status === 403) {
+      let why = ""; try { why = String((await r.json()).error || ""); } catch {}
+      throw new Error(/token/i.test(why)
+        ? `The database rejected your sign-in (${why}). Sign out and sign in again.`
+        : `The database rules refused ${method} guestbook/${path.split("/")[1] || ""} (${why || r.status}). You are signed in with UID ${uidOf(t)}. The rules must contain exactly that UID: auth.uid === '${uidOf(t)}'.`);
+    }
     if (!r.ok) throw new Error("Database error " + r.status);
     return r.json();
   };
@@ -119,7 +128,7 @@
   /*  actions  */
   const run = async (fn, okText) => {
     if (busy) return; busy = true;
-    try { await fn(); setMsg($("#dashMsg"), okText || "", "ok"); }
+    try { await fn(); setMsg($("#dashMsg"), (typeof okText === "function" ? okText() : okText) || "", "ok"); }
     catch (e) { setMsg($("#dashMsg"), e.message === "signed out" ? "Session expired. Please sign in again." : e.message, "err"); if (e.message === "signed out") show("login"); }
     busy = false;
   };
@@ -132,7 +141,7 @@
     if (!confirm(`${n.ok ? "Delete" : "Deny"} this note from ${n.name}? This can't be undone.`)) return;
     run(async () => { await api("guestbook/" + encodeURIComponent(n.k), "DELETE"); notes = notes.filter((x) => x !== n); render(); }, n.ok ? "Deleted." : "Denied and removed.");
   };
-  const refreshNow = () => run(async () => { await load(); render(); }, "Up to date.");
+  const refreshNow = () => run(async () => { await load(); render(); }, () => "Up to date. Signed in with UID " + uidOf(tok.id));
 
   /*  boot  */
   $("#signout").addEventListener("click", () => { tok = null; saveRefresh(null); notes = []; show("login"); });
