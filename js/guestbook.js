@@ -86,12 +86,31 @@
     btn.disabled = false;
   });
 
+  // A note I posted stays "awaiting approval" on my side only. If the owner denied it (deleted it), stop showing it.
+  // Only a clear "this note no longer exists" answer removes it; a failed request keeps it.
+  async function prune() {
+    if (!endpoint || !mine.length) return;
+    const seen = new Set(approved.map((a) => a.k));
+    const checked = await Promise.all(mine.map(async (m) => {
+      if (seen.has(m.k)) return { m, keep: false }; // now public, nothing left to track
+      try {
+        const r = await fetch(`${endpoint}/guestbook/${encodeURIComponent(m.k)}.json`);
+        if (!r.ok) return { m, keep: true };
+        return (await r.json()) === null ? { m, keep: false, denied: true } : { m, keep: true };
+      } catch { return { m, keep: true }; }
+    }));
+    mine = checked.filter((c) => c.keep).map((c) => c.m); store.set("gb.mine", mine);
+    if (checked.some((c) => c.denied)) say("A note you left wasn't approved, so it has been removed.");
+  }
+
   let loaded = false;
   new IntersectionObserver(async ([e], io) => {
     if (!e.isIntersecting || loaded) return;
     loaded = true; io.disconnect();
-    try { approved = (await db.list()).map((x) => clean(x, x.k)).filter(Boolean); }
+    let ok = false;
+    try { approved = (await db.list()).map((x) => clean(x, x.k)).filter(Boolean); ok = true; }
     catch (err) { approved = []; console.warn("Guestbook could not load:", err.message || err); say("The guestbook is offline right now."); }
+    if (ok) await prune(); // only when the list loaded, so being offline never wipes anyone's pending note
     render();
   }, { rootMargin: "200px" }).observe(host);
   render();

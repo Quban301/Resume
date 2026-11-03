@@ -84,19 +84,30 @@
   const panel = document.createElement("div");
   panel.className = "achv-panel"; panel.id = "achvPanel"; panel.hidden = true; panel.setAttribute("role", "dialog"); panel.setAttribute("aria-label", "Achievements");
   document.body.appendChild(panel);
+  let armed = false, armTimer = 0; // Reset progress needs a second click within 4 seconds
   const renderPanel = () => {
     panel.innerHTML = `<div class="achv-head"><b>Achievements</b><span>${got.size * G}G / ${total() * G}G</span><button type="button" class="achv-mute" aria-pressed="${muted}">${muted ? "Sound off" : "Sound on"}</button></div><ul>${Object.entries(defs).map(([id, [n, d]]) => {
       const on = got.has(id);
       return `<li class="${on ? "on" : ""}"><span class="achv-medal">${on ? TROPHY : "?"}</span><span class="achv-txt"><b>${on ? esc(n) : "Secret achievement"}</b><small>${on ? esc(d) : "Keep exploring: the terminal, the games, an old cheat code..."}</small></span><em>${G}G</em></li>`;
-    }).join("")}</ul>`;
+    }).join("")}</ul><div class="achv-foot"><button type="button" class="achv-reset${armed ? " armed" : ""}"${got.size ? "" : " disabled"}>${armed ? "Click again to confirm" : "Reset progress"}</button></div>`;
   };
   const setOpen = (open) => {
-    if (open) renderPanel();
+    if (open) renderPanel(); else { armed = false; clearTimeout(armTimer); }
     panel.hidden = !open; badge?.setAttribute("aria-expanded", String(open));
   };
   badge?.addEventListener("click", (e) => { e.stopPropagation(); setOpen(panel.hidden); });
   panel.addEventListener("click", (e) => {
     e.stopPropagation();
+    if (e.target.closest(".achv-reset")) {
+      if (!armed) {
+        armed = true; renderPanel(); clearTimeout(armTimer);
+        armTimer = setTimeout(() => { armed = false; if (!panel.hidden) renderPanel(); }, 4000);
+        return;
+      }
+      armed = false; clearTimeout(armTimer); got.clear(); queue.length = 0; store.set("achv", []);
+      renderBadge(); renderPanel(); say("Achievements reset. Time to hunt again.");
+      return;
+    }
     if (e.target.closest(".achv-mute")) { muted = !muted; store.set("mute", muted); renderPanel(); if (!muted) chime(); }
   });
   document.addEventListener("click", () => { if (!panel.hidden) setOpen(false); });

@@ -43,7 +43,7 @@ While Snake, Sudoku or Typefall is running, the game takes over the whole termin
 
 ## Achievements
 
-A trophy button in the nav tracks hidden achievements, with an Xbox-style unlock banner and a synthesised chime (toggle sound in the panel). Progress is saved in `localStorage`.
+A trophy button in the nav tracks hidden achievements, with an Xbox-style unlock banner and a synthesised chime (toggle sound in the panel). Progress is saved in `localStorage`, and the panel has a **Reset progress** button (two clicks to confirm).
 
 | Achievement | How to unlock |
 | --- | --- |
@@ -125,5 +125,7 @@ Visitors can only create notes, and only with `ok: false`. Only your signed-in a
 ### Moderating
 
 Open `/guestbook/` on your site and sign in. Pending notes can be approved, edited or denied; approved notes can be unpublished, edited or deleted. Notes containing links are flagged. Your session lives in the tab only and ends when you close it.
+
+A visitor sees their own pending note marked "awaiting approval". If you deny it, it disappears from their view the next time they load the guestbook.
 
 Unapproved notes are hidden on the site, not secret: the database URL is public-read, so anyone who knows it can read pending notes directly.

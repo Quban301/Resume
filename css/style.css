@@ -2384,6 +2384,34 @@ html {
   border-color: var(--accent);
   color: var(--text);
 }
+.achv-foot {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 12px;
+}
+.achv-reset {
+  font: 500 .7rem var(--font-mono);
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  transition: .2s;
+}
+.achv-reset:hover:not(:disabled) {
+  border-color: #e5484d;
+  color: #e5484d;
+}
+.achv-reset.armed {
+  background: color-mix(in srgb, #e5484d 16%, transparent);
+  border-color: #e5484d;
+  color: #e5484d;
+}
+.achv-reset:disabled {
+  opacity: .45;
+  cursor: default;
+}
 .achv-panel ul {
   list-style: none;
   margin: 0;
