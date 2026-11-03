@@ -3,7 +3,7 @@
 (() => {
   const cfg = (window.SITE && window.SITE.guestbook) || {};
   const base = (cfg.endpoint || "").replace(/\/$/, ""), apiKey = cfg.apiKey || "";
-  const MOODS = ["🌱", "👋", "💚", "🚀", "🔥", "🐛"], MAX_NAME = 24, MAX_MSG = 240;
+  const MOODS = ["😍", "🤏", "💚","🤍", "🤩", "🔥", "🫶"], MAX_NAME = 24, MAX_MSG = 240;
   const $ = (s) => document.querySelector(s);
   const el = (tag, props = {}, ...kids) => {
     const e = document.createElement(tag);
