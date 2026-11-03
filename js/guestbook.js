@@ -35,7 +35,7 @@
   const remote = {
     async list() {
       const r = await fetch(`${endpoint}/guestbook.json?orderBy="$key"&limitToLast=100`);
-      if (!r.ok) throw new Error("offline");
+      if (!r.ok) throw new Error("HTTP " + r.status + " from " + endpoint); // 401/403 = database rules, 404 = wrong URL
       const o = await r.json();
       return o ? Object.entries(o).filter(([, v]) => v && v.ok === true).map(([k, v]) => clean(v, k)).filter(Boolean) : [];
     },
@@ -91,7 +91,7 @@
     if (!e.isIntersecting || loaded) return;
     loaded = true; io.disconnect();
     try { approved = (await db.list()).map((x) => clean(x, x.k)).filter(Boolean); }
-    catch { approved = []; say("The guestbook is offline right now."); }
+    catch (err) { approved = []; console.warn("Guestbook could not load:", err.message || err); say("The guestbook is offline right now."); }
     render();
   }, { rootMargin: "200px" }).observe(host);
   render();
