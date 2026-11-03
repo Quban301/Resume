@@ -92,9 +92,7 @@
   }).observe(cv);
   addEventListener("resize", () => { if (game) { fit(); game.resize && game.resize(); } });
 
-  /* ====================================================================
-     SUDOKU
-     ==================================================================== */
+  /* SUDOKU */
   const peers = (i) => {
     const r = Math.floor(i / 9), c = i % 9, b = Math.floor(r / 3) * 3 + Math.floor(c / 3);
     return (j) => { const rr = Math.floor(j / 9), cc = j % 9; return j !== i && (rr === r || cc === c || Math.floor(rr / 3) * 3 + Math.floor(cc / 3) === b); };
@@ -297,9 +295,7 @@
     };
   };
 
-  /* ====================================================================
-     TYPEFALL: words fall, type them before they land
-     ==================================================================== */
+  /* TYPEFALL: words fall, type them before they land */
   const extras = ["commit", "merge", "deploy", "docker", "kernel", "socket", "branch", "lambda", "cache", "query", "token", "regex", "async", "stack", "queue", "patch", "debug", "build", "schema", "router", "binary", "syntax", "thread", "server", "client", "cookie", "script", "module", "linter", "proxy", "cipher", "daemon", "bytes", "scope", "yield"];
   const bank = [...new Set([...T.skills.map((s) => s.toLowerCase()).filter((s) => /^[a-z]{3,10}$/.test(s)), ...extras])];
 
@@ -423,9 +419,7 @@
   };
 
 
-  /* ====================================================================
-     MINESWEEPER (the achievement pops on the second safe click, not on finishing)
-     ==================================================================== */
+  /* MINESWEEPER (the achievement pops on the second safe click, not on finishing) */
   const SWEEP = { easy: [9, 9, 10], medium: [16, 16, 40], hard: [16, 30, 99] }; // rows, cols, mines
   const NUM = [null, "#6ab0ff", "#5fe08a", "#ff6b6b", "#b08cff", "#ff9a6b", "#4de0d0", "#e4efe6", "#8fa595"];
 
