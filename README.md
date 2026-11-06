@@ -11,6 +11,7 @@ It is a portfolio first and a playground second: a living network background, a 
 - **Projects "darkroom"**: scroll-driven gallery where project prints develop on the table, with a loupe lightbox. Curated projects are merged with public, non-fork repos from GitHub.
 - **Competency tree**: a procedurally generated SVG tree whose branches grow as you scroll. Falls back to a plain list on small screens.
 - **Nav clock**: sits next to the logo with two faces, each with its own look. Click to swap: split-flap digits, or glowing Roman numerals labelled HORAE / MINUTAE / SECUNDAE (with – for zero).
+- **Preloader**: a console-style boot screen. Ribbons of green light swirl around a blob of living goo (metaballs on a canvas) while the page, fonts and guestbook load behind it, so the guestbook is already filled in. When everything is ready the streaks and goo explode outward and the site appears. The full intro plays on the first load of a visit and a short version after that. It shows no text, never blocks for more than a few seconds, stays dark whatever the theme, is a still image for reduced-motion users, and is skipped without JavaScript.
 - **Command palette**: `Ctrl+K` for navigation, theme, games and secrets.
 - **Experience, skills, education, certifications and contact**, all rendered from one data file.
 
@@ -77,6 +78,8 @@ js/clock.js       nav flip clock (flip / Roman)
 js/terminal.js    terminal + Snake
 js/games.js       Sudoku + Typefall
 js/defender.js    Network Defender
+js/preloader.js   loading screen logic (what to wait for, and for how long)
+js/preloader-fx.js  the boot-screen canvas animation
 js/guestbook.js   guestbook
 guestbook/        moderation page (served at /guestbook/)
 ```

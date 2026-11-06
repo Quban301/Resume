@@ -86,6 +86,9 @@
     btn.disabled = false;
   });
 
+  // Toasts raised while the preloader is still up would hide behind it, so they wait until it is gone.
+  const later = (msg) => (window.Preload ? Preload.ready : Promise.resolve()).then(() => say(msg));
+
   // A note I posted stays "awaiting approval" on my side only. If the owner denied it (deleted it), stop showing it.
   // Only a clear "this note no longer exists" answer removes it; a failed request keeps it.
   async function prune() {
@@ -100,19 +103,20 @@
       } catch { return { m, keep: true }; }
     }));
     mine = checked.filter((c) => c.keep).map((c) => c.m); store.set("gb.mine", mine);
-    if (checked.some((c) => c.denied)) say("A note you left wasn't approved, so it has been removed.");
+    if (checked.some((c) => c.denied)) later("A note you left wasn't approved, so it has been removed.");
   }
 
-  let loaded = false;
-  new IntersectionObserver(async ([e], io) => {
-    if (!e.isIntersecting || loaded) return;
-    loaded = true; io.disconnect();
+  // Load straight away rather than when scrolled into view, and tell the preloader, so the notes are already
+  // on the page when the visitor gets here.
+  const loading = (async () => {
     let ok = false;
     try { approved = (await db.list()).map((x) => clean(x, x.k)).filter(Boolean); ok = true; }
-    catch (err) { approved = []; console.warn("Guestbook could not load:", err.message || err); say("The guestbook is offline right now."); }
+    catch (err) { approved = []; console.warn("Guestbook could not load:", err.message || err); later("The guestbook is offline right now."); }
     if (ok) await prune(); // only when the list loaded, so being offline never wipes anyone's pending note
     render();
-  }, { rootMargin: "200px" }).observe(host);
+    return ok;
+  })();
+  if (window.Preload) Preload.track("guestbook", loading.then((ok) => { if (!ok) throw new Error("offline"); }));
   render();
 
   Site.cmds.push({ n: "Sign the guestbook", k: "fun", run: Site.go("#guestbook") });
